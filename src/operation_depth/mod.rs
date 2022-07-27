@@ -27,14 +27,14 @@ fn recurse_selections(selections: &[Selection], depth: usize, ctx: &ApolloCompil
             Selection::FragmentSpread(f) => {
                 if let Some(fragment) = f.fragment(&ctx.db) {
                     let new_depth =
-                        recurse_selections(fragment.selection_set().selection(), depth + 1, ctx);
+                        recurse_selections(fragment.selection_set().selection(), depth, ctx);
                     if new_depth > max_depth {
                         max_depth = new_depth
                     }
                 }
             }
             Selection::InlineFragment(f) => {
-                let new_depth = recurse_selections(f.selection_set().selection(), depth + 1, ctx);
+                let new_depth = recurse_selections(f.selection_set().selection(), depth, ctx);
                 if new_depth > max_depth {
                     max_depth = new_depth
                 }
@@ -79,7 +79,7 @@ mod tests {
         let operations = ctx.operations();
         let operation = operations.first().expect("operation missing");
         let depth = operation.max_depth(&ctx);
-        assert_eq!(depth, 4);
+        assert_eq!(depth, 3);
     }
 
     #[test]
@@ -103,6 +103,6 @@ fragment f on B {
         let operations = ctx.operations();
         let operation = operations.first().expect("operation missing");
         let depth = operation.max_depth(&ctx);
-        assert_eq!(depth, 4);
+        assert_eq!(depth, 3);
     }
 }
