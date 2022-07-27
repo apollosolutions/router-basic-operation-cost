@@ -1,17 +1,16 @@
-use anyhow::Result;
-use apollo_compiler::{values::Selection, ApolloCompiler};
+use apollo_compiler::{
+    values::{OperationDefinition, Selection},
+    ApolloCompiler,
+};
 
-use crate::compiler_ext::CompilerAdditions;
+pub trait OperationDefinitionExt {
+    fn max_depth(&self, ctx: &ApolloCompiler) -> usize;
+}
 
-pub fn operation_depth(operation: &String, operation_name: Option<&String>) -> Result<usize> {
-    let compiler = ApolloCompiler::new(&operation);
-
-    if let Some(operation) = compiler.operation_by_name(operation_name) {
-        let depth = recurse_selections(operation.selection_set().selection(), 0, &compiler);
-        return Ok(depth);
+impl OperationDefinitionExt for OperationDefinition {
+    fn max_depth(&self, ctx: &ApolloCompiler) -> usize {
+        return recurse_selections(self.selection_set().selection(), 0, ctx);
     }
-
-    Err(anyhow::format_err!("missing operation"))
 }
 
 fn recurse_selections(selections: &[Selection], depth: usize, ctx: &ApolloCompiler) -> usize {
@@ -48,19 +47,21 @@ fn recurse_selections(selections: &[Selection], depth: usize, ctx: &ApolloCompil
 
 #[cfg(test)]
 mod tests {
-    use super::operation_depth;
+    use crate::operation_depth::OperationDefinitionExt;
 
-    use anyhow::Result;
+    use apollo_compiler::ApolloCompiler;
 
     #[test]
-    fn basic() -> Result<()> {
-        let depth = operation_depth(&String::from("{ hello { world } }"), None)?;
+    fn basic() {
+        let ctx = ApolloCompiler::new(&String::from("{ hello { world } }"));
+        let operations = ctx.operations();
+        let operation = operations.first().expect("operation missing");
+        let depth = operation.max_depth(&ctx);
         assert_eq!(depth, 2);
-        Ok(())
     }
 
     #[test]
-    fn inline_fragments() -> Result<()> {
+    fn inline_fragments() {
         let op = &String::from(
             "
 {
@@ -74,13 +75,15 @@ mod tests {
   }
 }",
         );
-        let depth = operation_depth(op, None)?;
+        let ctx = ApolloCompiler::new(op);
+        let operations = ctx.operations();
+        let operation = operations.first().expect("operation missing");
+        let depth = operation.max_depth(&ctx);
         assert_eq!(depth, 4);
-        Ok(())
     }
 
     #[test]
-    fn named_fragments() -> Result<()> {
+    fn named_fragments() {
         let op = &String::from(
             "
 fragment f on B {
@@ -96,8 +99,10 @@ fragment f on B {
   }
 }",
         );
-        let depth = operation_depth(op, None)?;
+        let ctx = ApolloCompiler::new(op);
+        let operations = ctx.operations();
+        let operation = operations.first().expect("operation missing");
+        let depth = operation.max_depth(&ctx);
         assert_eq!(depth, 4);
-        Ok(())
     }
 }

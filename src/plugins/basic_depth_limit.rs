@@ -1,5 +1,6 @@
 use std::ops::ControlFlow;
 
+use apollo_compiler::ApolloCompiler;
 use apollo_router::graphql::{Error, Response};
 use apollo_router::layers::ServiceBuilderExt;
 use apollo_router::plugin::Plugin;
@@ -12,7 +13,8 @@ use serde::Deserialize;
 use tower::util::BoxService;
 use tower::{BoxError, ServiceBuilder, ServiceExt};
 
-use crate::operation_depth::operation_depth;
+use crate::compiler_ext::CompilerAdditions;
+use crate::operation_depth::OperationDefinitionExt;
 
 #[derive(Debug)]
 struct BasicDepthLimit {
@@ -40,39 +42,26 @@ impl Plugin for BasicDepthLimit {
         ServiceBuilder::new()
             .checkpoint(move |req: RouterRequest| {
                 if let Some(operation) = req.originating_request.body().query.clone() {
-                    let result = operation_depth(
-                        &operation,
-                        req.originating_request.body().operation_name.as_ref(),
-                    );
-                    match result {
-                        Ok(depth) => {
-                            if depth > limit {
-                                let error = Error::builder()
-                                    .message("operation depth exceeded limit")
-                                    .build();
+                    let ctx = ApolloCompiler::new(&operation);
+                    let operation_name = req.originating_request.body().operation_name.as_ref();
 
-                                let res = RouterResponse::builder()
-                                    .error(error)
-                                    .status_code(StatusCode::BAD_REQUEST)
-                                    .context(req.context)
-                                    .build()?;
-
-                                return Ok(ControlFlow::Break(res.boxed()));
-                            }
-                        }
-                        Err(_) => {
+                    if let Some(operation) = ctx.operation_by_name(operation_name) {
+                        let depth = operation.max_depth(&ctx);
+                        if depth > limit {
                             let error = Error::builder()
-                                .message("could not calculate operation depth")
+                                .message("operation depth exceeded limit")
                                 .build();
 
                             let res = RouterResponse::builder()
                                 .error(error)
-                                .status_code(StatusCode::INTERNAL_SERVER_ERROR)
+                                .status_code(StatusCode::BAD_REQUEST)
                                 .context(req.context)
                                 .build()?;
 
                             return Ok(ControlFlow::Break(res.boxed()));
                         }
+                    } else {
+                        tracing::warn!("could not find operation in document");
                     }
                 }
 
