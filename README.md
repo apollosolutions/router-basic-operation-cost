@@ -1,6 +1,16 @@
-# Apollo Router Basic Operation Cost Plugin
+# Apollo Router Basic Operation Cost / Depth Plugins
 
 **The code in this repository is experimental and has been provided for reference purposes only. Community feedback is welcome but this project may not be supported in the same way that repositories in the official [Apollo GraphQL GitHub organization](https://github.com/apollographql) are. If you need help you can file an issue on this repository, [contact Apollo](https://www.apollographql.com/contact-sales) to talk to an expert, or create a ticket directly in Apollo Studio.**
+
+## Known limitations
+
+- The operation cost plugin is very naive. It doesn't take lists or abstract types into account. It's more of a weight field counter than a true cost analyzer.
+- Bugs that still need fixing:
+  - [apollo-rs#280](https://github.com/apollographql/apollo-rs/issues/280) — cannot get types on selected fields within inline fragments
+  - [apollo-rs#281](https://github.com/apollographql/apollo-rs/issues/281) — introspection operations panic
+
+<details>
+  <summary>Original scaffold README</summary>
 
 # Apollo Router project
 
@@ -94,3 +104,4 @@ Your release binary is now located in `target/release/router`
    ```bash
    cargo router plugin remove hello_world
    ```
+   </details>
