@@ -1,13 +1,13 @@
 use http::StatusCode;
 use std::collections::HashMap;
 use std::ops::ControlFlow;
+use std::sync::Arc;
 
-use apollo_router::graphql::{Error, Response};
+use apollo_router::graphql::Error;
 use apollo_router::layers::ServiceBuilderExt;
-use apollo_router::plugin::Plugin;
+use apollo_router::plugin::{Plugin, PluginInit};
 use apollo_router::register_plugin;
 use apollo_router::services::{RouterRequest, RouterResponse};
-use futures::stream::BoxStream;
 use schemars::JsonSchema;
 use serde::Deserialize;
 use tower::util::BoxService;
@@ -18,28 +18,31 @@ use crate::operation_cost::operation_cost;
 #[derive(Debug)]
 struct BasicOperationCost {
     configuration: Conf,
+    sdl: Arc<String>,
 }
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 struct Conf {
     cost_map: HashMap<String, i32>,
     max_cost: i32,
-    sdl: String,
 }
 
 #[async_trait::async_trait]
 impl Plugin for BasicOperationCost {
     type Config = Conf;
 
-    async fn new(configuration: Self::Config) -> Result<Self, BoxError> {
-        Ok(BasicOperationCost { configuration })
+    async fn new(init: PluginInit<Self::Config>) -> Result<Self, BoxError> {
+        Ok(BasicOperationCost {
+            configuration: init.config,
+            sdl: init.supergraph_sdl,
+        })
     }
 
     fn router_service(
         &self,
-        service: BoxService<RouterRequest, RouterResponse<BoxStream<'static, Response>>, BoxError>,
-    ) -> BoxService<RouterRequest, RouterResponse<BoxStream<'static, Response>>, BoxError> {
-        let sdl = self.configuration.sdl.clone();
+        service: BoxService<RouterRequest, RouterResponse, BoxError>,
+    ) -> BoxService<RouterRequest, RouterResponse, BoxError> {
+        let sdl = self.sdl.clone();
         let cost_map = self.configuration.cost_map.clone();
         let max_cost = self.configuration.max_cost;
 
@@ -66,8 +69,20 @@ impl Plugin for BasicOperationCost {
                                 .context(req.context)
                                 .build()?;
 
-                            return Ok(ControlFlow::Break(res.boxed()));
+                            return Ok(ControlFlow::Break(res));
                         }
+                    } else {
+                        let error = Error::builder()
+                            .message("could not calculate operation cost")
+                            .build();
+
+                        let res = RouterResponse::builder()
+                            .error(error)
+                            .status_code(StatusCode::INTERNAL_SERVER_ERROR)
+                            .context(req.context)
+                            .build()?;
+
+                        return Ok(ControlFlow::Break(res));
                     }
                 }
 
@@ -89,12 +104,12 @@ register_plugin!(
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::sync::Arc;
 
     use super::{BasicOperationCost, Conf};
 
     use apollo_router::plugin::test::{IntoSchema, PluginTestHarness};
-    use apollo_router::plugin::Plugin;
-    use apollo_router::Schema;
+    use apollo_router::plugin::{Plugin, PluginInit};
     use tower::BoxError;
 
     #[tokio::test]
@@ -102,24 +117,27 @@ mod tests {
         apollo_router::plugin::plugins()
             .get("apollosolutions.basic_operation_cost")
             .expect("Plugin not found")
-            .create_instance(&serde_json::json!({"cost_map" : { "Query.hello": 10 }, "max_cost": 10, "sdl": "type Query { hello: String }"}))
+            .create_instance(&serde_json::json!({"cost_map" : { "Query.hello": 10 }, "max_cost": 10, "sdl": "type Query { hello: String }"}), Default::default())
             .await
             .unwrap();
     }
 
     #[tokio::test]
     async fn basic_test_error_response() -> Result<(), BoxError> {
-        let canned: Schema = IntoSchema::Canned.try_into()?;
-
         // Define a configuration to use with our plugin
         let conf = Conf {
-            sdl: canned.as_str().to_string(),
             cost_map: HashMap::from([("Query.topProducts".to_string(), 10)]),
             max_cost: 10,
         };
 
+        let sdl = Arc::new(String::from(include_str!(
+            "../../supergraph-schema.graphql"
+        )));
+
         // Build an instance of our plugin to use in the test harness
-        let plugin = BasicOperationCost::new(conf).await.expect("created plugin");
+        let plugin = BasicOperationCost::new(PluginInit::new(conf, sdl))
+            .await
+            .expect("created plugin");
 
         // Create the test harness. You can add mocks for individual services, or use prebuilt canned services.
         let mut test_harness = PluginTestHarness::builder()
@@ -150,17 +168,19 @@ mod tests {
 
     #[tokio::test]
     async fn basic_test() -> Result<(), BoxError> {
-        let canned: Schema = IntoSchema::Canned.try_into()?;
-
-        // Define a configuration to use with our plugin
         let conf = Conf {
-            sdl: canned.as_str().to_string(),
             cost_map: HashMap::from([("Query.topProducts".to_string(), 2)]),
             max_cost: 12,
         };
 
+        let sdl = Arc::new(String::from(include_str!(
+            "../../supergraph-schema.graphql"
+        )));
+
         // Build an instance of our plugin to use in the test harness
-        let plugin = BasicOperationCost::new(conf).await.expect("created plugin");
+        let plugin = BasicOperationCost::new(PluginInit::new(conf, sdl))
+            .await
+            .expect("created plugin");
 
         // Create the test harness. You can add mocks for individual services, or use prebuilt canned services.
         let mut test_harness = PluginTestHarness::builder()

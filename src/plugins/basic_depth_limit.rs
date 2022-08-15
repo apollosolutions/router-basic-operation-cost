@@ -1,12 +1,11 @@
 use std::ops::ControlFlow;
 
 use apollo_compiler::ApolloCompiler;
-use apollo_router::graphql::{Error, Response};
+use apollo_router::graphql::Error;
 use apollo_router::layers::ServiceBuilderExt;
-use apollo_router::plugin::Plugin;
+use apollo_router::plugin::{Plugin, PluginInit};
 use apollo_router::register_plugin;
 use apollo_router::services::{RouterRequest, RouterResponse};
-use futures::stream::BoxStream;
 use http::StatusCode;
 use schemars::JsonSchema;
 use serde::Deserialize;
@@ -30,14 +29,16 @@ struct Conf {
 impl Plugin for BasicDepthLimit {
     type Config = Conf;
 
-    async fn new(configuration: Self::Config) -> Result<Self, BoxError> {
-        Ok(BasicDepthLimit { configuration })
+    async fn new(init: PluginInit<Self::Config>) -> Result<Self, BoxError> {
+        Ok(BasicDepthLimit {
+            configuration: init.config,
+        })
     }
 
     fn router_service(
         &self,
-        service: BoxService<RouterRequest, RouterResponse<BoxStream<'static, Response>>, BoxError>,
-    ) -> BoxService<RouterRequest, RouterResponse<BoxStream<'static, Response>>, BoxError> {
+        service: BoxService<RouterRequest, RouterResponse, BoxError>,
+    ) -> BoxService<RouterRequest, RouterResponse, BoxError> {
         let limit = self.configuration.limit;
         ServiceBuilder::new()
             .checkpoint(move |req: RouterRequest| {
@@ -58,7 +59,7 @@ impl Plugin for BasicDepthLimit {
                                 .context(req.context)
                                 .build()?;
 
-                            return Ok(ControlFlow::Break(res.boxed()));
+                            return Ok(ControlFlow::Break(res));
                         }
                     } else {
                         tracing::warn!("could not find operation in document");
@@ -82,7 +83,7 @@ mod tests {
 
     use apollo_router::plugin::test::IntoSchema::Canned;
     use apollo_router::plugin::test::PluginTestHarness;
-    use apollo_router::plugin::Plugin;
+    use apollo_router::plugin::{Plugin, PluginInit};
     use tower::BoxError;
 
     #[tokio::test]
@@ -90,7 +91,7 @@ mod tests {
         apollo_router::plugin::plugins()
             .get("apollosolutions.basic_depth_limit")
             .expect("Plugin not found")
-            .create_instance(&serde_json::json!({"limit" : 10}))
+            .create_instance(&serde_json::json!({"limit" : 10}), Default::default())
             .await
             .unwrap();
     }
@@ -101,7 +102,9 @@ mod tests {
         let conf = Conf { limit: 10 };
 
         // Build an instance of our plugin to use in the test harness
-        let plugin = BasicDepthLimit::new(conf).await.expect("created plugin");
+        let plugin = BasicDepthLimit::new(PluginInit::new(conf, Default::default()))
+            .await
+            .expect("created plugin");
 
         // Create the test harness. You can add mocks for individual services, or use prebuilt canned services.
         let mut test_harness = PluginTestHarness::builder()
