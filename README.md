@@ -4,6 +4,7 @@
 
 ## Known limitations
 
+- The current implementation re-parses the schema and operation on each request. This will change once we've implemented [apollo-rs#275](https://github.com/apollographql/apollo-rs/issues/275) and [apollo-rs#221](https://github.com/apollographql/apollo-rs/issues/221) and made the precompiled schema available in plugins.
 - The operation cost plugin is very naive. It doesn't take lists or abstract types into account. It's more of a weighted field counter than a true cost analyzer.
 - The depth limiting plugin doesn't ignore introspection queries, so the minimum depth limit is 14 for introspection to work.
 
