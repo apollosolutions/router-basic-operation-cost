@@ -4,10 +4,8 @@
 
 ## Known limitations
 
-- The operation cost plugin is very naive. It doesn't take lists or abstract types into account. It's more of a weight field counter than a true cost analyzer.
-- Bugs that still need fixing:
-  - [apollo-rs#280](https://github.com/apollographql/apollo-rs/issues/280) — cannot get types on selected fields within inline fragments
-  - [apollo-rs#281](https://github.com/apollographql/apollo-rs/issues/281) — introspection operations panic
+- The operation cost plugin is very naive. It doesn't take lists or abstract types into account. It's more of a weighted field counter than a true cost analyzer.
+- The depth limiting plugin doesn't ignore introspection queries, so the minimum depth limit is 14 for introspection to work.
 
 <details>
   <summary>Original scaffold README</summary>

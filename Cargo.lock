@@ -82,9 +82,9 @@ checksum = "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704"
 
 [[package]]
 name = "apollo-compiler"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "619d54da02587ebced191b1000e3d8b31060cf7c77c5800c53d33d88faaeff30"
+checksum = "a4ce4b80c74ed3a1c899729be631b4e52022f6ba044ca885ac73be44a1c8c674"
 dependencies = [
  "apollo-parser",
  "miette 4.7.1",
@@ -111,8 +111,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-router"
-version = "0.15.0"
-source = "git+https://github.com/apollographql/router.git?tag=v0.15.0#1764cd625e39c1f3672bc24cf90a08f15f000b08"
+version = "0.15.1"
+source = "git+https://github.com/apollographql/router.git?tag=v0.15.1#ac7607b0b96e0193631015226b2fdc14c7a9515d"
 dependencies = [
  "access-json",
  "anyhow",
@@ -202,8 +202,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-router-scaffold"
-version = "0.15.0"
-source = "git+https://github.com/apollographql/router.git?tag=v0.15.0#1764cd625e39c1f3672bc24cf90a08f15f000b08"
+version = "0.15.1"
+source = "git+https://github.com/apollographql/router.git?tag=v0.15.1#ac7607b0b96e0193631015226b2fdc14c7a9515d"
 dependencies = [
  "anyhow",
  "cargo-scaffold",
@@ -215,8 +215,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-spaceport"
-version = "0.15.0"
-source = "git+https://github.com/apollographql/router.git?tag=v0.15.0#1764cd625e39c1f3672bc24cf90a08f15f000b08"
+version = "0.15.1"
+source = "git+https://github.com/apollographql/router.git?tag=v0.15.1#ac7607b0b96e0193631015226b2fdc14c7a9515d"
 dependencies = [
  "bytes",
  "clap 3.2.15",
@@ -237,8 +237,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-uplink"
-version = "0.15.0"
-source = "git+https://github.com/apollographql/router.git?tag=v0.15.0#1764cd625e39c1f3672bc24cf90a08f15f000b08"
+version = "0.15.1"
+source = "git+https://github.com/apollographql/router.git?tag=v0.15.1#ac7607b0b96e0193631015226b2fdc14c7a9515d"
 dependencies = [
  "futures",
  "graphql_client",

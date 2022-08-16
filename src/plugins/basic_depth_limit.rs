@@ -48,6 +48,7 @@ impl Plugin for BasicDepthLimit {
 
                     if let Some(operation) = ctx.operation_by_name(operation_name) {
                         let depth = operation.max_depth(&ctx);
+                        tracing::debug!("depth for operation {:?}: {}", operation_name, depth);
                         if depth > limit {
                             let error = Error::builder()
                                 .message("operation depth exceeded limit")

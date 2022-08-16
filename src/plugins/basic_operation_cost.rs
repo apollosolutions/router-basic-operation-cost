@@ -49,15 +49,11 @@ impl Plugin for BasicOperationCost {
         ServiceBuilder::new()
             .checkpoint(move |req: RouterRequest| {
                 if let Some(operation) = req.originating_request.body().query.clone() {
-                    let result = operation_cost(
-                        &sdl,
-                        &operation,
-                        req.originating_request.body().operation_name.as_ref(),
-                        &cost_map,
-                    );
+                    let operation_name = req.originating_request.body().operation_name.as_ref();
+                    let result = operation_cost(&sdl, &operation, operation_name, &cost_map);
 
                     if let Ok(cost) = result {
-                        dbg!(cost);
+                        tracing::debug!("cost for operation {:?}: {}", operation_name, cost);
                         if cost > max_cost {
                             let error = Error::builder()
                                 .message("operation cost exceeded limit")

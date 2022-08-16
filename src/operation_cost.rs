@@ -77,7 +77,11 @@ fn recurse_selections(context: &Context, selection: &[Selection], parent_name: &
             Selection::InlineFragment(f) => {
                 // ... on ConcreteType
                 if let Some(parent_name) = f.type_condition() {
-                    cost += recurse_selections(context, f.selection_set().selection(), parent_name);
+                    cost += recurse_selections(
+                        context,
+                        f.selection_set().selection(),
+                        &String::from(parent_name),
+                    );
                 // ... @include(if: $x)
                 } else {
                     cost += recurse_selections(context, f.selection_set().selection(), parent_name);

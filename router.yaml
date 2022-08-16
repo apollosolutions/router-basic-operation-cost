@@ -1,6 +1,6 @@
 plugins:
   apollosolutions.basic_depth_limit:
-    limit: 10
+    limit: 14
   apollosolutions.basic_operation_cost:
     cost_map:
       Query.me: 10
