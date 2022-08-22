@@ -23,8 +23,8 @@ struct BasicOperationCost {
 
 #[derive(Debug, Default, Deserialize, JsonSchema)]
 struct Conf {
-    cost_map: HashMap<String, i32>,
-    max_cost: i32,
+    cost_map: HashMap<String, usize>,
+    max_cost: usize,
 }
 
 #[async_trait::async_trait]
@@ -49,11 +49,12 @@ impl Plugin for BasicOperationCost {
         ServiceBuilder::new()
             .checkpoint(move |req: RouterRequest| {
                 if let Some(operation) = req.originating_request.body().query.clone() {
-                    let operation_name = req.originating_request.body().operation_name.as_ref();
+                    let operation_name = req.originating_request.body().operation_name.as_deref();
                     let result = operation_cost(&sdl, &operation, operation_name, &cost_map);
 
                     if let Ok(cost) = result {
-                        tracing::debug!("cost for operation {:?}: {}", operation_name, cost);
+                        tracing::debug!(?operation_name, %cost, "operation_cost");
+
                         if cost > max_cost {
                             let error = Error::builder()
                                 .message("operation cost exceeded limit")
