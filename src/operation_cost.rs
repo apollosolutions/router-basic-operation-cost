@@ -1,9 +1,34 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    ops::{AddAssign, Deref},
+};
 
 use anyhow::{anyhow, Result};
 use apollo_compiler::{values::Selection, ApolloCompiler};
 
 use crate::compiler_ext::CompilerAdditions;
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Cost(usize);
+
+impl Cost {
+    pub fn new(c: usize) -> Self {
+        Self(c)
+    }
+}
+
+impl AddAssign for Cost {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0
+    }
+}
+
+impl Display for Cost {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 struct Context<'a> {
     compiler: &'a ApolloCompiler,
@@ -15,7 +40,7 @@ pub fn operation_cost(
     operation: &str,
     operation_name: Option<&str>,
     cost_map: &HashMap<String, usize>,
-) -> Result<usize> {
+) -> Result<Cost> {
     let mut input = sdl.to_owned();
     input.push_str(operation);
 
@@ -48,8 +73,8 @@ fn recurse_selections<'a>(
     context: &'a Context,
     selection: &'a [Selection],
     parent_name: &'a str,
-) -> usize {
-    let mut cost = 0;
+) -> Cost {
+    let mut cost = Cost(0);
 
     for selection in selection {
         match selection {
@@ -65,7 +90,7 @@ fn recurse_selections<'a>(
 
                         tracing::debug!(%coord, %field_cost);
 
-                        cost += field_cost;
+                        cost += Cost(*field_cost);
                         cost +=
                             recurse_selections(context, f.selection_set().selection(), &type_name);
                     }
@@ -106,6 +131,8 @@ mod tests {
 
     use anyhow::Result;
 
+    use crate::operation_cost::Cost;
+
     use super::operation_cost;
 
     #[test]
@@ -116,7 +143,7 @@ mod tests {
             None,
             &HashMap::from([("Query.hello".to_string(), 10)]),
         )?;
-        assert_eq!(cost, 10);
+        assert_eq!(cost, Cost(10));
         Ok(())
     }
 
@@ -128,7 +155,7 @@ mod tests {
             None,
             &HashMap::from([("Query.a".to_string(), 5), ("A.b".to_string(), 8)]),
         )?;
-        assert_eq!(cost, 13);
+        assert_eq!(cost, Cost(13));
         Ok(())
     }
 
@@ -142,7 +169,7 @@ mod tests {
             None,
             &HashMap::from([("Query.a".to_string(), 5), ("A.b".to_string(), 8), ("A1.b".to_string(), 13), ("A1.c".to_string(), 13)]),
         )?;
-        assert_eq!(cost, 26);
+        assert_eq!(cost, Cost(26));
         Ok(())
     }
 }

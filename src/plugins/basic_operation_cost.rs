@@ -13,7 +13,7 @@ use serde::Deserialize;
 use tower::util::BoxService;
 use tower::{BoxError, ServiceBuilder, ServiceExt};
 
-use crate::operation_cost::operation_cost;
+use crate::operation_cost::{operation_cost, Cost};
 
 #[derive(Debug)]
 struct BasicOperationCost {
@@ -44,7 +44,7 @@ impl Plugin for BasicOperationCost {
     ) -> BoxService<RouterRequest, RouterResponse, BoxError> {
         let sdl = self.sdl.clone();
         let cost_map = self.configuration.cost_map.clone();
-        let max_cost = self.configuration.max_cost;
+        let max_cost = Cost::new(self.configuration.max_cost);
 
         ServiceBuilder::new()
             .checkpoint(move |req: RouterRequest| {
