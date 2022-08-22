@@ -44,11 +44,13 @@ impl Plugin for BasicDepthLimit {
             .checkpoint(move |req: RouterRequest| {
                 if let Some(operation) = req.originating_request.body().query.clone() {
                     let ctx = ApolloCompiler::new(&operation);
-                    let operation_name = req.originating_request.body().operation_name.as_ref();
+                    let operation_name = req.originating_request.body().operation_name.as_deref();
 
                     if let Some(operation) = ctx.operation_by_name(operation_name) {
                         let depth = operation.max_depth(&ctx);
-                        tracing::debug!("depth for operation {:?}: {}", operation_name, depth);
+
+                        tracing::debug!(?operation_name, %depth, "operation_depth");
+
                         if depth > limit {
                             let error = Error::builder()
                                 .message("operation depth exceeded limit")

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use anyhow::{anyhow, Result};
 use apollo_compiler::{values::Selection, ApolloCompiler};
@@ -7,17 +7,17 @@ use crate::compiler_ext::CompilerAdditions;
 
 struct Context<'a> {
     compiler: &'a ApolloCompiler,
-    cost_map: &'a HashMap<String, i32>,
+    cost_map: &'a HashMap<String, usize>,
 }
 
 pub fn operation_cost(
-    sdl: &String,
-    operation: &String,
-    operation_name: Option<&String>,
-    cost_map: &HashMap<String, i32>,
-) -> Result<i32> {
+    sdl: &str,
+    operation: &str,
+    operation_name: Option<&str>,
+    cost_map: &HashMap<String, usize>,
+) -> Result<usize> {
     let mut input = sdl.to_owned();
-    input.push_str(operation.as_str());
+    input.push_str(operation);
 
     let compiler = ApolloCompiler::new(&input);
 
@@ -26,24 +26,29 @@ pub fn operation_cost(
         cost_map,
     };
 
-    if let Some(operation) = compiler.operation_by_name(operation_name) {
-        let parent = compiler
-            .operation_root_type(&operation)
-            .expect("root type must exist");
+    match compiler.operation_by_name(operation_name) {
+        Some(operation) => {
+            let parent = compiler
+                .operation_root_type(&operation)
+                .expect("root type must exist");
 
-        let total_cost = recurse_selections(
-            &context,
-            operation.selection_set().selection(),
-            &parent.name().to_string(),
-        );
+            let total_cost = recurse_selections(
+                &context,
+                operation.selection_set().selection(),
+                parent.name(),
+            );
 
-        return Ok(total_cost);
+            Ok(total_cost)
+        }
+        None => Err(anyhow!("missing operation")),
     }
-
-    Err(anyhow!("missing operation"))
 }
 
-fn recurse_selections(context: &Context, selection: &[Selection], parent_name: &String) -> i32 {
+fn recurse_selections<'a>(
+    context: &'a Context,
+    selection: &'a [Selection],
+    parent_name: &'a str,
+) -> usize {
     let mut cost = 0;
 
     for selection in selection {
@@ -51,13 +56,14 @@ fn recurse_selections(context: &Context, selection: &[Selection], parent_name: &
             Selection::Field(f) => {
                 if let Some(ty) = f.ty() {
                     let type_name = ty.name();
+                    let field_name = f.name();
 
                     // ignore introspection fields
                     if !type_name.starts_with("__") {
-                        let coord = format!("{}.{}", parent_name, f.name());
-                        let field_cost = context.cost_map.get(&coord).unwrap_or(&1);
+                        let coord = format!("{}.{}", parent_name, field_name);
+                        let field_cost = context.cost_map.get(coord.deref()).unwrap_or(&1);
 
-                        tracing::info!("{}: {}", &coord, &field_cost);
+                        tracing::debug!(%coord, %field_cost);
 
                         cost += field_cost;
                         cost +=
