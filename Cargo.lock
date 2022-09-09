@@ -123,8 +123,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-router"
-version = "1.0.0-alpha.2"
-source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.2#055183276dffc6eaa9477b2abd3fa612482ad8b6"
+version = "1.0.0-alpha.3"
+source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.3#84d3b8d9c39025eafc51c7238df44a9dfa82d906"
 dependencies = [
  "access-json",
  "anyhow",
@@ -213,8 +213,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-router-scaffold"
-version = "1.0.0-alpha.2"
-source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.2#055183276dffc6eaa9477b2abd3fa612482ad8b6"
+version = "1.0.0-alpha.3"
+source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.3#84d3b8d9c39025eafc51c7238df44a9dfa82d906"
 dependencies = [
  "anyhow",
  "cargo-scaffold",
@@ -226,8 +226,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-spaceport"
-version = "1.0.0-alpha.2"
-source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.2#055183276dffc6eaa9477b2abd3fa612482ad8b6"
+version = "1.0.0-alpha.3"
+source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.3#84d3b8d9c39025eafc51c7238df44a9dfa82d906"
 dependencies = [
  "bytes",
  "clap 3.2.20",
@@ -248,8 +248,8 @@ dependencies = [
 
 [[package]]
 name = "apollo-uplink"
-version = "1.0.0-alpha.2"
-source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.2#055183276dffc6eaa9477b2abd3fa612482ad8b6"
+version = "1.0.0-alpha.3"
+source = "git+https://github.com/apollographql/router.git?tag=v1.0.0-alpha.3#84d3b8d9c39025eafc51c7238df44a9dfa82d906"
 dependencies = [
  "futures",
  "graphql_client",
