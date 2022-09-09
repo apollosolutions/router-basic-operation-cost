@@ -48,8 +48,8 @@ impl Plugin for BasicOperationCost {
 
         ServiceBuilder::new()
             .checkpoint(move |req: supergraph::Request| {
-                if let Some(operation) = req.originating_request.body().query.clone() {
-                    let operation_name = req.originating_request.body().operation_name.as_deref();
+                if let Some(operation) = req.supergraph_request.body().query.clone() {
+                    let operation_name = req.supergraph_request.body().operation_name.as_deref();
                     let result = operation_cost(&sdl, &operation, operation_name, &cost_map);
 
                     if let Ok(cost) = result {

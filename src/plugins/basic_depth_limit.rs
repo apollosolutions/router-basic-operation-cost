@@ -42,9 +42,9 @@ impl Plugin for BasicDepthLimit {
         let limit = self.configuration.limit;
         ServiceBuilder::new()
             .checkpoint(move |req: supergraph::Request| {
-                if let Some(operation) = req.originating_request.body().query.clone() {
+                if let Some(operation) = req.supergraph_request.body().query.clone() {
                     let ctx = ApolloCompiler::new(&operation);
-                    let operation_name = req.originating_request.body().operation_name.as_deref();
+                    let operation_name = req.supergraph_request.body().operation_name.as_deref();
 
                     if let Some(operation) = ctx.operation_by_name(operation_name) {
                         let depth = operation.max_depth(&ctx);
